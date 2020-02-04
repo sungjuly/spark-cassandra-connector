@@ -109,9 +109,14 @@ class CassandraConnector(val conf: CassandraConnectorConf)
     session.getCluster.getConfiguration.getPolicies.getLoadBalancingPolicy match {
       case policy: DataCenterAware => {
         val dcToUse = _config.localDC.getOrElse(policy.determineDataCenter(_config.hosts, allNodes))
-        allNodes.filter(_.getDatacenter == dcToUse).map(_.getAddress)
+        logInfo(s"findNodes: ${dcToUse})")
+        val nodes = allNodes.filter(_.getDatacenter == dcToUse).map(_.getAddress)
+        logInfo(s"findNodes: nodes: ${nodes})")
+        nodes
       }
-      case _ => allNodes.map(_.getAddress)
+      case _ =>
+        logInfo(s"findNodes: all nodes")
+        allNodes.map(_.getAddress)
     }
   }
 
