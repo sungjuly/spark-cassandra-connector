@@ -47,8 +47,8 @@ object DefaultConnectionFactory extends CassandraConnectionFactory {
         new MultipleRetryPolicy(conf.queryRetryCount))
       .withReconnectionPolicy(
         new ExponentialReconnectionPolicy(conf.minReconnectionDelayMillis, conf.maxReconnectionDelayMillis))
-      .withLoadBalancingPolicy(
-        new LocalNodeFirstLoadBalancingPolicy(conf.hosts, conf.localDC))
+//      .withLoadBalancingPolicy(
+//        new LocalNodeFirstLoadBalancingPolicy(conf.hosts, conf.localDC))
       .withAuthProvider(conf.authConf.authProvider)
       .withSocketOptions(options)
       .withCompression(conf.compression)
