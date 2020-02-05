@@ -7,6 +7,7 @@ import scala.collection.JavaConversions._
 import scala.language.reflectiveCalls
 import org.apache.spark.{SparkConf, SparkContext}
 import com.datastax.driver.core._
+import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy
 import com.datastax.spark.connector.cql.CassandraConnectorConf.CassandraSSLConf
 import com.datastax.spark.connector.util.SerialShutdownHooks
 import com.datastax.spark.connector.util.Logging
@@ -107,8 +108,8 @@ class CassandraConnector(val conf: CassandraConnectorConf)
     val allNodes: Set[Host] = session.getCluster.getMetadata.getAllHosts.toSet
 
     session.getCluster.getConfiguration.getPolicies.getLoadBalancingPolicy match {
-      case policy: DataCenterAware => {
-        val dcToUse = _config.localDC.getOrElse(policy.determineDataCenter(_config.hosts, allNodes))
+      case policy: DCAwareRoundRobinPolicy => {
+        val dcToUse = _config.localDC.getOrElse(LocalNodeFirstLoadBalancingPolicy.determineDataCenter(_config.hosts, allNodes))
         logInfo(s"findNodes: ${dcToUse})")
         val nodes = allNodes.filter(_.getDatacenter == dcToUse).map(_.getAddress)
         logInfo(s"findNodes: nodes: ${nodes})")
