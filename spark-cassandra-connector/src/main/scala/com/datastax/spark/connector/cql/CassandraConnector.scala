@@ -7,7 +7,6 @@ import scala.collection.JavaConversions._
 import scala.language.reflectiveCalls
 import org.apache.spark.{SparkConf, SparkContext}
 import com.datastax.driver.core._
-import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy
 import com.datastax.spark.connector.cql.CassandraConnectorConf.CassandraSSLConf
 import com.datastax.spark.connector.util.SerialShutdownHooks
 import com.datastax.spark.connector.util.Logging
@@ -79,11 +78,11 @@ class CassandraConnector(val conf: CassandraConnectorConf)
   def openSession() = {
     val session = sessionCache.acquire(_config)
     try {
-      val foundNodes = findNodes(session)
-//      val allNodes = session.getCluster.getMetadata.getAllHosts.toSet
-//      val dcToUse = _config.localDC.getOrElse(LocalNodeFirstLoadBalancingPolicy.determineDataCenter(_config.hosts, allNodes))
-//      val myNodes = allNodes.filter(_.getDatacenter == dcToUse).map(_.getAddress)
-      _config = _config.copy(hosts = foundNodes)
+      val allNodes = session.getCluster.getMetadata.getAllHosts.toSet
+      val dcToUse = _config.localDC.getOrElse(LocalNodeFirstLoadBalancingPolicy.determineDataCenter(_config.hosts, allNodes))
+      val myNodes = allNodes.filter(_.getDatacenter == dcToUse).map(_.getAddress)
+      logInfo(s"Cassandra nodes: ${myNodes})")
+      _config = _config.copy(hosts = myNodes)
 
       val connectionsPerHost = _config.maxConnectionsPerExecutor.getOrElse(1)
       val poolingOptions = session.getCluster.getConfiguration.getPoolingOptions
@@ -101,23 +100,6 @@ class CassandraConnector(val conf: CassandraConnectorConf)
       case e: Throwable =>
         sessionCache.release(session, 0)
         throw e
-    }
-  }
-
-  private def findNodes(session: Session) = {
-    val allNodes: Set[Host] = session.getCluster.getMetadata.getAllHosts.toSet
-
-    session.getCluster.getConfiguration.getPolicies.getLoadBalancingPolicy match {
-      case policy: DCAwareRoundRobinPolicy => {
-        val dcToUse = _config.localDC.getOrElse(LocalNodeFirstLoadBalancingPolicy.determineDataCenter(_config.hosts, allNodes))
-        logInfo(s"findNodes: ${dcToUse})")
-        val nodes = allNodes.filter(_.getDatacenter == dcToUse).map(_.getAddress)
-        logInfo(s"findNodes: nodes: ${nodes})")
-        nodes
-      }
-      case _ =>
-        logInfo(s"findNodes: all nodes")
-        allNodes.map(_.getAddress)
     }
   }
 

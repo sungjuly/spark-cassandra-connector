@@ -15,7 +15,7 @@ import scala.util.Random
   * For writes, if a statement has a routing key set, this LBP is token aware - it prefers the nodes which
   * are replicas of the computed token to the other nodes. */
 class LocalNodeFirstLoadBalancingPolicy(contactPoints: Set[InetAddress], localDC: Option[String] = None,
-                                        shuffleReplicas: Boolean = true) extends LoadBalancingPolicy with Logging with DataCenterAware {
+                                        shuffleReplicas: Boolean = true) extends LoadBalancingPolicy with Logging {
 
   import LocalNodeFirstLoadBalancingPolicy._
 
@@ -84,10 +84,6 @@ class LocalNodeFirstLoadBalancingPolicy(contactPoints: Set[InetAddress], localDC
   override def onRemove(host: Host) {
     nodes -= host
     logInfo(s"Removed host ${host.getAddress.getHostAddress} (${host.getDatacenter})")
-  }
-
-  override def determineDataCenter(contactPoints: Set[InetAddress], allHosts: Set[Host]): String = {
-    LocalNodeFirstLoadBalancingPolicy.determineDataCenter(contactPoints,allHosts)
   }
 
   override def close() = { }
